@@ -3,6 +3,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { View, Text, FlatList, TouchableOpacity, TextInput, StyleSheet, ActivityIndicator, KeyboardAvoidingView, Platform, StatusBar } from 'react-native';
 import api from '../api/api';
 import { colors, spacing, shadows } from '../theme';
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export default function ChatRoomScreen({ route, navigation }) {
   const { chatId, name } = route.params;
@@ -13,7 +14,12 @@ export default function ChatRoomScreen({ route, navigation }) {
   const listRef = useRef();
 
   useEffect(() => {
-    api.get(`/chats/${chatId}/messages`).then(r => setMessages(r.data.data)).catch(console.log).finally(() => setLoading(false));
+    const loadMessages = async () => {
+      const token = await AsyncStorage.getItem("token");
+      console.log(token);
+      api.get(`/chats/${chatId}/messages`, { headers: { Authorization: `Bearer ${token}` } }).then(r => setMessages(r.data.data)).catch(console.log).finally(() => setLoading(false));
+    };
+    loadMessages();
   }, []);
 
   const sendMessage = async () => {

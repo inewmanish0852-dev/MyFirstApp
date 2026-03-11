@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, StatusBar } from 'react-native';
 import api from '../api/api';
 import { colors, spacing, shadows, typography } from '../theme';
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export default function CartScreen({ navigation }) {
   const [cart, setCart] = useState(null);
@@ -12,7 +13,9 @@ export default function CartScreen({ navigation }) {
 
   const loadCart = async () => {
     try {
-      const res = await api.get('/cart');
+      const token = await AsyncStorage.getItem("token");
+      console.log(token);
+      const res = await api.get('/cart', { headers: { Authorization: `Bearer ${token}` } });
       setCart(res.data.data);
     } catch (e) { console.log(e); }
     finally { setLoading(false); }
@@ -21,7 +24,9 @@ export default function CartScreen({ navigation }) {
   const updateQty = async (itemId, qty) => {
     if (qty < 1) { removeItem(itemId); return; }
     try {
-      await api.post('/cart/update', { cart_item_id: itemId, quantity: qty });
+      const token = await AsyncStorage.getItem("token");
+      console.log(token);
+      await api.post('/cart/update', { cart_item_id: itemId, quantity: qty }, { headers: { Authorization: `Bearer ${token}` } });
       setCart(prev => ({
         ...prev,
         items: prev.items.map(i => i.id === itemId ? { ...i, quantity: qty, subtotal: i.price * qty } : i),
@@ -31,7 +36,9 @@ export default function CartScreen({ navigation }) {
 
   const removeItem = async (itemId) => {
     try {
-      await api.delete(`/cart/${itemId}`);
+      const token = await AsyncStorage.getItem("token");
+      console.log(token);
+      await api.delete(`/cart/${itemId}`, { headers: { Authorization: `Bearer ${token}` } });
       setCart(prev => ({ ...prev, items: prev.items.filter(i => i.id !== itemId) }));
     } catch (e) { console.log(e); }
   };

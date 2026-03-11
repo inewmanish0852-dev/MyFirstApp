@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, StatusBar } from 'react-native';
 import api from '../api/api';
 import { colors, spacing, shadows, typography } from '../theme';
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export default function ProductDetailScreen({ route, navigation }) {
   const { id } = route.params;
@@ -18,7 +19,9 @@ export default function ProductDetailScreen({ route, navigation }) {
 
   const loadProduct = async () => {
     try {
-      const res = await api.get(`/products/${id}`);
+      const token = await AsyncStorage.getItem("token");
+      console.log(token);
+      const res = await api.get(`/products/${id}`, { headers: { Authorization: `Bearer ${token}` } });
       setProduct(res.data.data);
     } catch (e) { console.log(e); }
     finally { setLoading(false); }
@@ -27,7 +30,9 @@ export default function ProductDetailScreen({ route, navigation }) {
   const addToCart = async () => {
     try {
       setAddingCart(true);
-      await api.post('/cart/add', { product_id: id, quantity: qty });
+      const token = await AsyncStorage.getItem("token");
+      console.log(token);
+      await api.post('/cart/add', { product_id: id, quantity: qty }, { headers: { Authorization: `Bearer ${token}` } });
       Alert.alert('Added! 🛒', 'Item added to your cart.', [
         { text: 'View Cart', onPress: () => navigation.navigate('Cart') },
         { text: 'Continue', style: 'cancel' },

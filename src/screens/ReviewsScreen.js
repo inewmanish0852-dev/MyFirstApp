@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, StatusBar } from 'react-native';
 import api from '../api/api';
 import { colors, spacing, shadows } from '../theme';
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export default function ReviewsScreen({ route, navigation }) {
   const { productId, productTitle } = route.params;
@@ -10,7 +11,12 @@ export default function ReviewsScreen({ route, navigation }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    api.get(`/products/${productId}/reviews`).then(r => setData(r.data.data)).catch(console.log).finally(() => setLoading(false));
+    const loadReviews = async () => {
+      const token = await AsyncStorage.getItem("token");
+      console.log(token);
+      api.get(`/products/${productId}/reviews`, { headers: { Authorization: `Bearer ${token}` } }).then(r => setData(r.data.data)).catch(console.log).finally(() => setLoading(false));
+    };
+    loadReviews();
   }, []);
 
   const Stars = ({ n }) => (

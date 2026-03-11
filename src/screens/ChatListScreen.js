@@ -3,13 +3,19 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, StatusBar } from 'react-native';
 import api from '../api/api';
 import { colors, spacing, shadows } from '../theme';
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export default function ChatListScreen({ navigation }) {
   const [chats, setChats] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    api.get('/chats').then(r => setChats(r.data.data)).catch(console.log).finally(() => setLoading(false));
+    const loadChats = async () => {
+      const token = await AsyncStorage.getItem("token");
+      console.log(token);
+      api.get('/chats', { headers: { Authorization: `Bearer ${token}` } }).then(r => setChats(r.data.data)).catch(console.log).finally(() => setLoading(false));
+    };
+    loadChats();
   }, []);
 
   return (

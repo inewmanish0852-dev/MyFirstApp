@@ -3,6 +3,8 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, StatusBar, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import api from '../api/api';
 import { colors, spacing, shadows, typography } from '../theme';
+import AsyncStorage from "@react-native-async-storage/async-storage";
+
 
 export default function WriteReviewScreen({ route, navigation }) {
   const { productId, productTitle } = route.params;
@@ -15,7 +17,9 @@ export default function WriteReviewScreen({ route, navigation }) {
     if (comment.length < 10) { Alert.alert('Error', 'Review must be at least 10 characters.'); return; }
     try {
       setLoading(true);
-      await api.post('/reviews', { product_id: productId, rating, comment });
+      const token = await AsyncStorage.getItem("token");
+      console.log(token);
+      await api.post('/reviews', { product_id: productId, rating, comment }, { headers: { Authorization: `Bearer ${token}` } });
       Alert.alert('Thank you! ⭐', 'Your review has been submitted.', [{ text: 'OK', onPress: () => navigation.goBack() }]);
     } catch (e) { Alert.alert('Error', 'Could not submit review.'); } finally { setLoading(false); }
   };

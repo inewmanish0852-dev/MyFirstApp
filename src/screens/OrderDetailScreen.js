@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, StatusBar } from 'react-native';
 import api from '../api/api';
 import { colors, spacing, shadows } from '../theme';
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export default function OrderDetailScreen({ route, navigation }) {
   const { id } = route.params;
@@ -10,7 +11,12 @@ export default function OrderDetailScreen({ route, navigation }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    api.get(`/orders/${id}`).then(r => setOrder(r.data.data)).catch(console.log).finally(() => setLoading(false));
+    const loadOrder = async () => {
+      const token = await AsyncStorage.getItem("token");
+      console.log(token);
+      api.get(`/orders/${id}`, { headers: { Authorization: `Bearer ${token}` } }).then(r => setOrder(r.data.data)).catch(console.log).finally(() => setLoading(false));
+    };
+    loadOrder();
   }, []);
 
   if (loading) return <View style={s.center}><ActivityIndicator size="large" color={colors.primary} /></View>;

@@ -5,17 +5,25 @@ import React2, { useEffect, useState as useState2 } from 'react';
 import { View as View2, Text as Text2, FlatList as FlatList2, TouchableOpacity as TO2, StyleSheet as SS2, ActivityIndicator as AI2, StatusBar as SB2 } from 'react-native';
 import api2 from '../api/api';
 import { colors as C, spacing as SP, shadows as SH } from '../theme';
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export function NotificationsScreen({ navigation }) {
   const [data, setData] = useState2(null);
   const [loading, setLoading] = useState2(true);
 
   useEffect(() => {
-    api2.get('/notifications').then(r => setData(r.data.data)).catch(console.log).finally(() => setLoading(false));
+    const loadNotifications = async () => {
+      const token = await AsyncStorage.getItem("token");
+      console.log(token);
+      api2.get('/notifications', { headers: { Authorization: `Bearer ${token}` } }).then(r => setData(r.data.data)).catch(console.log).finally(() => setLoading(false));
+    };
+    loadNotifications();
   }, []);
 
   const markAllRead = async () => {
-    await api2.post('/notifications/read-all');
+    const token = await AsyncStorage.getItem("token");
+    console.log(token);
+    await api2.post('/notifications/read-all', { headers: { Authorization: `Bearer ${token}` } });
     setData(prev => ({ ...prev, notifications: prev.notifications.map(n => ({ ...n, read: true })), unread_count: 0 }));
   };
 

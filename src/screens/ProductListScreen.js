@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, Image, TextInput, ScrollView, ActivityIndicator, StatusBar } from 'react-native';
 import api from '../api/api';
 import { colors, spacing, shadows, typography } from '../theme';
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export default function ProductListScreen({ navigation }) {
   const [products, setProducts] = useState([]);
@@ -16,7 +17,9 @@ export default function ProductListScreen({ navigation }) {
 
   const loadData = async () => {
     try {
-      const [pRes, cRes] = await Promise.all([api.get('/products'), api.get('/categories')]);
+      const token = await AsyncStorage.getItem("token");
+      console.log(token);
+      const [pRes, cRes] = await Promise.all([api.get('/products', { headers: { Authorization: `Bearer ${token}` } }), api.get('/categories', { headers: { Authorization: `Bearer ${token}` } })]);
       setProducts(pRes.data.data);
       setCategories(cRes.data.data);
     } catch (e) { console.log(e); }
@@ -25,7 +28,9 @@ export default function ProductListScreen({ navigation }) {
 
   const loadByCategory = async () => {
     try {
-      const res = await api.get(`/products/category/${activeCategory}`);
+      const token = await AsyncStorage.getItem("token");
+      console.log(token);
+      const res = await api.get(`/products/category/${activeCategory}`, { headers: { Authorization: `Bearer ${token}` } });
       setProducts(res.data.data);
     } catch (e) { console.log(e); }
   };

@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, StatusBar, ScrollView } from 'react-native';
 import api from '../api/api';
 import { colors, spacing, shadows } from '../theme';
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export default function GalleryScreen({ navigation }) {
   const [items, setItems] = useState([]);
@@ -12,7 +13,12 @@ export default function GalleryScreen({ navigation }) {
   const tabs = ['All', 'Products', 'Team'];
 
   useEffect(() => {
-    api.get('/gallery').then(r => { setItems(r.data.data); setFiltered(r.data.data); }).catch(console.log).finally(() => setLoading(false));
+    const loadGallery = async () => {
+      const token = await AsyncStorage.getItem("token");
+      console.log(token);
+      api.get('/gallery', { headers: { Authorization: `Bearer ${token}` } }).then(r => { setItems(r.data.data); setFiltered(r.data.data); }).catch(console.log).finally(() => setLoading(false));
+    };
+    loadGallery();
   }, []);
 
   const filterTab = (tab) => {

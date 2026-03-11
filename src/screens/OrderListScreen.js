@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, StatusBar } from 'react-native';
 import api from '../api/api';
 import { colors, spacing, shadows, typography } from '../theme';
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const STATUS_COLORS = {
   delivered:  { bg: '#EAFAF1', text: '#27AE60' },
@@ -16,7 +17,12 @@ export default function OrderListScreen({ navigation }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    api.get('/orders').then(res => setOrders(res.data.data)).catch(console.log).finally(() => setLoading(false));
+    const loadOrders = async () => {    
+      const token = await AsyncStorage.getItem("token");
+      console.log(token);
+      api.get('/orders', { headers: { Authorization: `Bearer ${token}` } }).then(res => setOrders(res.data.data)).catch(console.log).finally(() => setLoading(false));
+    };
+    loadOrders();
   }, []);
 
   const renderOrder = ({ item }) => {
