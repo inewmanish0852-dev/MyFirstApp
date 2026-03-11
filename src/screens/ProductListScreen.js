@@ -1,9 +1,9 @@
 // src/screens/ProductListScreen.js
-import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, Image, TextInput, ScrollView, ActivityIndicator, StatusBar } from 'react-native';
+import React, { useEffect, useState, useRef } from 'react';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, TextInput, ScrollView, ActivityIndicator, StatusBar } from 'react-native';
 import api from '../api/api';
+import { getToken } from '../utils/auth';
 import { colors, spacing, shadows, typography } from '../theme';
-import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export default function ProductListScreen({ navigation }) {
   const [products, setProducts] = useState([]);
@@ -11,37 +11,76 @@ export default function ProductListScreen({ navigation }) {
   const [activeCategory, setActiveCategory] = useState('all');
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
+  const isFirstRender = useRef(true);
 
+  // Sirf pehli baar — saara data load karo
   useEffect(() => { loadData(); }, []);
-  useEffect(() => { loadByCategory(); }, [activeCategory]);
+
+  // Sirf jab user category change kare (pehli render skip)
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+    loadByCategory();
+  }, [activeCategory]);
+
+  const getAuthHeaders = async () => {
+    const token = await getToken();
+    return { Authorization: `Bearer ${token}` };
+  };
 
   const loadData = async () => {
     try {
-      const token = await AsyncStorage.getItem("token");
-      console.log(token);
-      const [pRes, cRes] = await Promise.all([api.get('/products', { headers: { Authorization: `Bearer ${token}` } }), api.get('/categories', { headers: { Authorization: `Bearer ${token}` } })]);
+      const headers = await getAuthHeaders();
+      const [pRes, cRes] = await Promise.all([
+        api.get('/products',   { headers }),
+        api.get('/categories', { headers }),
+      ]);
       setProducts(pRes.data.data);
       setCategories(cRes.data.data);
-    } catch (e) { console.log(e); }
-    finally { setLoading(false); }
+    } catch (e) {
+      console.log('loadData error:', e);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const loadByCategory = async () => {
     try {
-      const token = await AsyncStorage.getItem("token");
-      console.log(token);
-      const res = await api.get(`/products/category/${activeCategory}`, { headers: { Authorization: `Bearer ${token}` } });
+      setLoading(true);
+      const headers = await getAuthHeaders();
+      const res = await api.get(`/products/category/${activeCategory}`, { headers });
       setProducts(res.data.data);
-    } catch (e) { console.log(e); }
+    } catch (e) {
+      console.log('loadByCategory error:', e);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const filtered = products.filter(p => p.title.toLowerCase().includes(search.toLowerCase()));
+  const filtered = products.filter(p =>
+    p.title.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const getEmoji = (category) => {
+    const map = { Electronics: '📱', Clothing: '👕', Bags: '🎒' };
+    return map[category] || '🛍️';
+  };
 
   const renderProduct = ({ item }) => (
-    <TouchableOpacity style={styles.productCard} onPress={() => navigation.navigate('ProductDetail', { id: item.id })} activeOpacity={0.9}>
+    <TouchableOpacity
+      style={styles.productCard}
+      onPress={() => navigation.navigate('ProductDetail', { id: item.id })}
+      activeOpacity={0.9}
+    >
       <View style={styles.productImg}>
-        <Text style={styles.productEmoji}>{item.category === 'Electronics' ? '📱' : item.category === 'Clothing' ? '👕' : item.category === 'Bags' ? '🎒' : '🛍️'}</Text>
-        {item.discount > 0 && <View style={styles.discountBadge}><Text style={styles.discountText}>-{item.discount}%</Text></View>}
+        <Text style={styles.productEmoji}>{getEmoji(item.category)}</Text>
+        {item.discount > 0 && (
+          <View style={styles.discountBadge}>
+            <Text style={styles.discountText}>-{item.discount}%</Text>
+          </View>
+        )}
       </View>
       <View style={styles.productInfo}>
         <Text style={styles.productTitle} numberOfLines={2}>{item.title}</Text>
@@ -52,7 +91,9 @@ export default function ProductListScreen({ navigation }) {
         </View>
         <View style={styles.priceRow}>
           <Text style={styles.price}>₹{item.price.toLocaleString()}</Text>
-          {item.original_price > item.price && <Text style={styles.originalPrice}>₹{item.original_price.toLocaleString()}</Text>}
+          {item.original_price > item.price && (
+            <Text style={styles.originalPrice}>₹{item.original_price.toLocaleString()}</Text>
+          )}
         </View>
       </View>
     </TouchableOpacity>
@@ -61,21 +102,41 @@ export default function ProductListScreen({ navigation }) {
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor={colors.primaryDark} />
+
+      {/* Header */}
       <View style={styles.headerBg}>
         <Text style={styles.headerTitle}>Products</Text>
         <View style={styles.searchBar}>
           <Text style={styles.searchIcon}>🔍</Text>
-          <TextInput style={styles.searchInput} placeholder="Search products..." placeholderTextColor="rgba(255,255,255,0.5)" value={search} onChangeText={setSearch} />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search products..."
+            placeholderTextColor="rgba(255,255,255,0.5)"
+            value={search}
+            onChangeText={setSearch}
+          />
         </View>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryScroll}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryScroll} contentContainerStyle={{ paddingRight: spacing.lg }}>
           {categories.map(cat => (
-            <TouchableOpacity key={cat.id} style={[styles.catChip, activeCategory === cat.slug && styles.catChipActive]} onPress={() => setActiveCategory(cat.slug)}>
-              <Text style={[styles.catChipText, activeCategory === cat.slug && styles.catChipTextActive]}>{cat.icon} {cat.name}</Text>
+            <TouchableOpacity
+              key={cat.id}
+              style={[styles.catChip, activeCategory === cat.slug && styles.catChipActive]}
+              onPress={() => setActiveCategory(cat.slug)}
+            >
+              <Text style={[styles.catChipText, activeCategory === cat.slug && styles.catChipTextActive]}>
+                {cat.icon} {cat.name}
+              </Text>
             </TouchableOpacity>
           ))}
         </ScrollView>
       </View>
-      {loading ? <ActivityIndicator style={{ flex: 1 }} size="large" color={colors.primary} /> : (
+
+      {/* Product Grid */}
+      {loading ? (
+        <View style={styles.loadingBox}>
+          <ActivityIndicator size="large" color={colors.primary} />
+        </View>
+      ) : (
         <FlatList
           data={filtered}
           renderItem={renderProduct}
@@ -83,7 +144,12 @@ export default function ProductListScreen({ navigation }) {
           numColumns={2}
           contentContainerStyle={styles.list}
           showsVerticalScrollIndicator={false}
-          ListEmptyComponent={<View style={styles.empty}><Text style={styles.emptyIcon}>📭</Text><Text style={styles.emptyText}>No products found</Text></View>}
+          ListEmptyComponent={
+            <View style={styles.empty}>
+              <Text style={styles.emptyIcon}>📭</Text>
+              <Text style={styles.emptyText}>No products found</Text>
+            </View>
+          }
         />
       )}
     </View>
@@ -102,6 +168,7 @@ const styles = StyleSheet.create({
   catChipActive: { backgroundColor: 'white' },
   catChipText: { fontSize: 12, color: 'rgba(255,255,255,0.8)', fontWeight: '600' },
   catChipTextActive: { color: colors.primary },
+  loadingBox: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   list: { padding: spacing.sm, paddingBottom: 80 },
   productCard: { flex: 1, backgroundColor: 'white', borderRadius: 16, margin: 6, overflow: 'hidden', ...shadows.card },
   productImg: { height: 120, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center', position: 'relative' },
