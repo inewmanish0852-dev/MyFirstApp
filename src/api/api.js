@@ -2,7 +2,8 @@ import axios from "axios";
 import { getToken } from "../utils/auth";
 
 const api = axios.create({
-  baseURL: "http://10.0.2.2:8000/api"
+  baseURL: "https://apifirstapp.onrender.com/api"
+  // baseURL: "http://127.0.0.1:8000/api"
 });
 
 api.interceptors.request.use(async (config) => {
