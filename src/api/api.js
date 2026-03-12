@@ -3,7 +3,7 @@ import { getToken } from "../utils/auth";
 
 const api = axios.create({
   baseURL: "https://apifirstapp.onrender.com/api"
-  // baseURL: "http://127.0.0.1:8000/api"
+  // baseURL: "http://10.0.2.2:8081/api"
 });
 
 api.interceptors.request.use(async (config) => {

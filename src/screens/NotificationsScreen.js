@@ -1,78 +1,132 @@
-// ─────────────────────────────────────────────────────────────────────────
 // src/screens/NotificationsScreen.js
-// ─────────────────────────────────────────────────────────────────────────
-import React2, { useEffect, useState as useState2 } from 'react';
-import { View as View2, Text as Text2, FlatList as FlatList2, TouchableOpacity as TO2, StyleSheet as SS2, ActivityIndicator as AI2, StatusBar as SB2 } from 'react-native';
-import api2 from '../api/api';
-import { colors as C, spacing as SP, shadows as SH } from '../theme';
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import React, { useEffect, useState } from 'react';
+import {
+  View, Text, FlatList, TouchableOpacity,
+  StyleSheet, ActivityIndicator, StatusBar
+} from 'react-native';
+import api from '../api/api';
+import { getToken } from '../utils/auth';
+import { colors, spacing, shadows } from '../theme';
 
-export function NotificationsScreen({ navigation }) {
-  const [data, setData] = useState2(null);
-  const [loading, setLoading] = useState2(true);
+export default function NotificationsScreen({ navigation }) {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const loadNotifications = async () => {
-      const token = await AsyncStorage.getItem("token");
-      console.log(token);
-      api2.get('/notifications', { headers: { Authorization: `Bearer ${token}` } }).then(r => setData(r.data.data)).catch(console.log).finally(() => setLoading(false));
-    };
     loadNotifications();
   }, []);
 
-  const markAllRead = async () => {
-    const token = await AsyncStorage.getItem("token");
-    console.log(token);
-    await api2.post('/notifications/read-all', { headers: { Authorization: `Bearer ${token}` } });
-    setData(prev => ({ ...prev, notifications: prev.notifications.map(n => ({ ...n, read: true })), unread_count: 0 }));
+  const loadNotifications = async () => {
+    try {
+      const token = await getToken();
+      const res = await api.get('/notifications', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setData(res.data.data);
+    } catch (e) {
+      console.log('Notifications error:', e);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const TYPE_COLORS = { order: '#1A3C6E', chat: '#27AE60', review: '#F39C12', promo: '#9B59B6' };
+  const markAllRead = async () => {
+    try {
+      const token = await getToken();
+      await api.post('/notifications/read-all', {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setData(prev => ({
+        ...prev,
+        notifications: prev.notifications.map(n => ({ ...n, read: true })),
+        unread_count: 0,
+      }));
+    } catch (e) {
+      console.log('markAllRead error:', e);
+    }
+  };
+
+  const TYPE_COLORS = {
+    order:  '#1A3C6E',
+    chat:   '#27AE60',
+    review: '#F39C12',
+    promo:  '#9B59B6',
+  };
 
   return (
-    <View2 style={n.container}>
-      <SB2 barStyle="light-content" backgroundColor={C.primaryDark} />
-      <View2 style={n.header}>
-        <Text2 style={n.headerTitle}>Notifications {data?.unread_count > 0 && <Text2 style={n.badge}> {data.unread_count} </Text2>}</Text2>
-        {data?.unread_count > 0 && <TO2 onPress={markAllRead}><Text2 style={n.markAll}>Mark all read</Text2></TO2>}
-      </View2>
-      {loading ? <AI2 style={{ flex: 1 }} size="large" color={C.primary} /> : (
-        <FlatList2
+    <View style={s.container}>
+      <StatusBar barStyle="light-content" backgroundColor={colors.primaryDark} />
+
+      {/* Header */}
+      <View style={s.header}>
+        <Text style={s.headerTitle}>
+          Notifications{' '}
+          {data?.unread_count > 0 && (
+            <Text style={s.badge}> {data.unread_count} </Text>
+          )}
+        </Text>
+        {data?.unread_count > 0 && (
+          <TouchableOpacity onPress={markAllRead}>
+            <Text style={s.markAll}>Mark all read</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+
+      {/* List */}
+      {loading ? (
+        <ActivityIndicator style={{ flex: 1 }} size="large" color={colors.primary} />
+      ) : (
+        <FlatList
           data={data?.notifications || []}
           keyExtractor={i => i.id.toString()}
-          contentContainerStyle={n.list}
+          contentContainerStyle={s.list}
+          showsVerticalScrollIndicator={false}
+          ListEmptyComponent={
+            <View style={s.empty}>
+              <Text style={s.emptyIcon}>🔔</Text>
+              <Text style={s.emptyText}>No notifications yet</Text>
+            </View>
+          }
           renderItem={({ item }) => (
-            <TO2 style={[n.notifItem, !item.read && n.unread]} activeOpacity={0.85}>
-              <View2 style={[n.iconBox, { backgroundColor: (TYPE_COLORS[item.type] || C.primary) + '15' }]}>
-                <Text2 style={n.icon}>{item.icon}</Text2>
-              </View2>
-              <View2 style={{ flex: 1 }}>
-                <Text2 style={[n.notifTitle, !item.read && { fontWeight: '800' }]}>{item.title}</Text2>
-                <Text2 style={n.notifBody}>{item.body}</Text2>
-                <Text2 style={n.notifTime}>{item.time}</Text2>
-              </View2>
-              {!item.read && <View2 style={n.unreadDot} />}
-            </TO2>
+            <TouchableOpacity
+              style={[s.notifItem, !item.read && s.unread]}
+              activeOpacity={0.85}
+            >
+              <View style={[s.iconBox, { backgroundColor: (TYPE_COLORS[item.type] || colors.primary) + '20' }]}>
+                <Text style={s.icon}>{item.icon}</Text>
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[s.notifTitle, !item.read && { fontWeight: '800' }]}>
+                  {item.title}
+                </Text>
+                <Text style={s.notifBody}>{item.body}</Text>
+                <Text style={s.notifTime}>{item.time}</Text>
+              </View>
+              {!item.read && <View style={s.unreadDot} />}
+            </TouchableOpacity>
           )}
         />
       )}
-    </View2>
+    </View>
   );
 }
 
-const n = SS2.create({
-  container: { flex: 1, backgroundColor: C.background },
-  header: { backgroundColor: C.primary, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: SP.lg, paddingTop: SP.lg, paddingBottom: SP.lg },
+const s = StyleSheet.create({
+  container:   { flex: 1, backgroundColor: colors.background },
+  header:      { backgroundColor: colors.primary, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.lg, paddingTop: spacing.lg, paddingBottom: spacing.lg },
   headerTitle: { fontSize: 22, fontWeight: '700', color: 'white' },
-  badge: { fontSize: 14, backgroundColor: '#E74C3C', borderRadius: 10, paddingHorizontal: 8, color: 'white' },
-  markAll: { fontSize: 13, color: 'rgba(255,255,255,0.7)', fontWeight: '600' },
-  list: { padding: SP.md, paddingBottom: 40 },
-  notifItem: { backgroundColor: 'white', borderRadius: 16, padding: SP.md, marginBottom: SP.sm, flexDirection: 'row', alignItems: 'flex-start', gap: 12, ...SH.card },
-  unread: { borderLeftWidth: 3, borderLeftColor: C.accent },
-  iconBox: { width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-  icon: { fontSize: 22 },
-  notifTitle: { fontSize: 14, fontWeight: '700', color: C.text, marginBottom: 3 },
-  notifBody: { fontSize: 12, color: C.textSecondary, lineHeight: 18, marginBottom: 4 },
-  notifTime: { fontSize: 11, color: C.textLight },
-  unreadDot: { width: 10, height: 10, backgroundColor: C.accent, borderRadius: 5, marginTop: 4, flexShrink: 0 },
+  badge:       { fontSize: 13, backgroundColor: '#E74C3C', borderRadius: 10, paddingHorizontal: 8, color: 'white', overflow: 'hidden' },
+  markAll:     { fontSize: 13, color: 'rgba(255,255,255,0.75)', fontWeight: '600' },
+  list:        { padding: spacing.md, paddingBottom: 40 },
+  notifItem:   { backgroundColor: 'white', borderRadius: 16, padding: spacing.md, marginBottom: spacing.sm, flexDirection: 'row', alignItems: 'flex-start', gap: 12, ...shadows.card },
+  unread:      { borderLeftWidth: 3, borderLeftColor: colors.accent },
+  iconBox:     { width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  icon:        { fontSize: 22 },
+  notifTitle:  { fontSize: 14, fontWeight: '700', color: colors.text, marginBottom: 3 },
+  notifBody:   { fontSize: 12, color: colors.textSecondary, lineHeight: 18, marginBottom: 4 },
+  notifTime:   { fontSize: 11, color: colors.textLight },
+  unreadDot:   { width: 10, height: 10, backgroundColor: colors.accent, borderRadius: 5, marginTop: 4, flexShrink: 0 },
+  empty:       { alignItems: 'center', paddingTop: 80 },
+  emptyIcon:   { fontSize: 48, marginBottom: 12 },
+  emptyText:   { fontSize: 15, color: colors.textLight },
 });

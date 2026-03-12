@@ -49,10 +49,10 @@ export default function AccountScreen({ navigation }) {
 
   const menuItems = [
     { icon: '👤', label: 'Edit Profile', desc: 'Update your information', screen: 'EditProfile' },
-    { icon: '🔔', label: 'Notifications', desc: 'Manage your alerts', screen: null },
+    { icon: '🔔', label: 'Notifications', desc: 'Manage your alerts', screen: 'Notifications' },
     { icon: '🔒', label: 'Change Password', desc: 'Update your security', screen: 'ChangePassword' },
-    { icon: '❓', label: 'Help & Support', desc: 'Get assistance', screen: null },
-    { icon: 'ℹ️', label: 'App Version', desc: 'v1.0.0', screen: null },
+    { icon: '❓', label: 'Help & Support', desc: 'Get assistance', screen: 'Helpsupport' },
+    { icon: 'ℹ️', label: 'App Version', desc: 'v1.0.0', screen: 'AppVersion' },
   ];
 
   if (loading) {

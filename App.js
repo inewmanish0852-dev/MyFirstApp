@@ -17,6 +17,10 @@ import InvoiceScreen from "./src/screens/InvoiceScreen";
 import ChatRoomScreen from "./src/screens/ChatRoomScreen";
 import ReviewsScreen from "./src/screens/ReviewsScreen";
 import WriteReviewScreen from "./src/screens/WriteReviewScreen";
+import NotificationsScreen  from "./src/screens/NotificationsScreen";
+import HelpsupportScreen from "./src/screens/HelpsupportScreen";
+import AppVersionScreen from "./src/screens/AppVersionScreen";
+
 import { isLoggedIn } from "./src/utils/auth";
 
 const Stack = createNativeStackNavigator();
@@ -68,6 +72,9 @@ export default function App() {
         <Stack.Screen name="ChatRoom"       component={ChatRoomScreen} />
         <Stack.Screen name="Reviews"        component={ReviewsScreen} />
         <Stack.Screen name="WriteReview"    component={WriteReviewScreen} />
+        <Stack.Screen name="Notifications"   component={NotificationsScreen} />
+        <Stack.Screen name="Helpsupport"    component={HelpsupportScreen} />
+        <Stack.Screen name="AppVersion"     component={AppVersionScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );
