@@ -59,8 +59,8 @@ export default function ProductListScreen({ navigation }) {
     }
   };
 
-  const filtered = (products || []).filter(p =>
-    (p?.title || "").toLowerCase().includes((search || "").toLowerCase())
+  const filtered = products.filter(p =>
+    p.title.toLowerCase().includes(search.toLowerCase())
   );
 
   const getEmoji = (category) => {
